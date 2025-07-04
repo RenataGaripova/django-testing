@@ -1,7 +1,5 @@
 """Тестируем контент на страницах проекта."""
-
 import pytest
-
 from django.conf import settings
 
 from news.forms import CommentForm
@@ -12,6 +10,7 @@ from news.forms import CommentForm
 def test_news_count(client, home_url):
     """Проверяем, что на главную страницу выводятся максимум 10 новостей."""
     response = client.get(home_url)
+    assert 'object_list' in response.context
     object_list = response.context['object_list']
     news_count = object_list.count()
     assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
@@ -22,6 +21,7 @@ def test_news_count(client, home_url):
 def test_news_order(client, home_url):
     """Проверяем порядок новостей на главной странице."""
     response = client.get(home_url)
+    assert 'object_list' in response.context
     object_list = response.context['object_list']
     dates_list = [news.date for news in object_list]
     sorted_dates = sorted(dates_list, reverse=True)

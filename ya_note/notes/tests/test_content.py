@@ -1,5 +1,4 @@
 """Тестируем контент на страницах проекта."""
-
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -11,14 +10,15 @@ User = get_user_model()
 
 
 class TestNotesContent(TestCase):
-    LIST_URL = reverse('notes:list')
-
     @classmethod
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Автор')
+        cls.author_client = Client()
+        cls.author_client.force_login(cls.author)
+
         cls.not_author = User.objects.create(username='Не автор')
-        cls.auth_client = Client()
-        cls.auth_client.force_login(cls.author)
+        cls.not_author_client = Client()
+        cls.not_author_client.force_login(cls.not_author)
 
         cls.note = Note.objects.create(
             author=cls.author,
@@ -27,29 +27,28 @@ class TestNotesContent(TestCase):
             slug='new-note',
         )
 
+        cls.list_url = reverse('notes:list')
+        cls.add_url = reverse('notes:add')
+        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
+
     def test_notes_context(self):
         """Проверка словаря context."""
-        response = self.auth_client.get(self.LIST_URL)
-        object_list = response.context['object_list']
-        self.assertIn(self.note, object_list)
+        client_and_expected_result = (
+            (self.author_client, True),
+            (self.not_author_client, False)
+        )
 
-    def test_single_user_notes(self):
-        """Проверяем, что пользователь видит только свои записи."""
-        self.client.force_login(self.not_author)
-        response = self.client.get(self.LIST_URL)
-        object_list = response.context['object_list']
-        self.assertNotIn(self.note, object_list)
+        for client, result in client_and_expected_result:
+            with self.subTest(name=self.list_url):
+                response = client.get(self.list_url)
+                object_list = response.context['object_list']
+                self.assertIs((self.note in object_list), result)
 
     def test_add_and_edit_forms(self):
         """Проверка форм на страницах создания и редактирования заметки."""
-        urls = (
-            ('notes:add', None),
-            ('notes:edit', ('new-note',)),
-        )
-
-        for url_name, args in urls:
-            with self.subTest(name=url_name):
-                url = reverse(url_name, args=args)
-                response = self.auth_client.get(url)
+        urls = (self.add_url, self.edit_url)
+        for url in urls:
+            with self.subTest():
+                response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)
