@@ -1,8 +1,9 @@
 """Тестируем маршруты проекта."""
+from http import HTTPStatus
+
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from pytest_django.asserts import assertRedirects
-from http import HTTPStatus
 from django.urls import reverse
 
 

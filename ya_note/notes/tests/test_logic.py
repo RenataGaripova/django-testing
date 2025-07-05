@@ -1,5 +1,6 @@
 """Тестируем логику проекта."""
 from http import HTTPStatus
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -12,8 +13,6 @@ User = get_user_model()
 
 
 class TestNotesLogic(TestCase):
-    MAX_SLUG_LENGTH = 100
-
     @classmethod
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Автор заметки')
@@ -53,10 +52,11 @@ class TestNotesLogic(TestCase):
 
         self.assertEqual(Note.objects.count(), 2)
 
-        created_note = Note.objects.get(author=self.test_user.pk)
+        created_note = Note.objects.get(pk=2)
 
         self.assertEqual(created_note.title, self.form_data['title'])
         self.assertEqual(created_note.text, self.form_data['text'])
+        self.assertEqual(created_note.slug, self.form_data['slug'])
 
     def test_auto_slug_creation(self):
         """Проверяем, что для пустого поля слаг формируется автоматически."""
@@ -67,7 +67,7 @@ class TestNotesLogic(TestCase):
         self.assertRedirects(response, reverse('notes:success'))
         self.assertEqual(Note.objects.count(), 2)
 
-        created_note = Note.objects.get(author=self.test_user.pk)
+        created_note = Note.objects.get(pk=2)
 
         assert created_note.slug == slugify(self.form_data['title'])
 
